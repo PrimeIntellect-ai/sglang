@@ -51,6 +51,13 @@ class LogitsProcessorOutput:
     # The logprobs and ids of the top-k tokens in output positions. shape: [#seq, k]
     next_token_top_logprobs_val: Optional[List] = None
     next_token_top_logprobs_idx: Optional[List] = None
+    
+    # # The hidden states of the next tokens.                              shape: [#seq, hidden_size]
+    # next_token_hidden_states: Optional[torch.Tensor] = None
+    # # The logprobs and ids of the top-k tokens in output positions. shape: [#seq, k]
+    # next_token_top_logprobs_val: Optional[List] = None
+    # next_token_top_logprobs_idx: Optional[List] = None
+
 
     ## Part 3: Prefill-only. This part will be assigned in python/sglang/srt/layers/logits_processor.py::LogitsProcessor
     # The logprobs of input tokens.        shape: [#token]
@@ -58,8 +65,16 @@ class LogitsProcessorOutput:
     # The logprobs and ids of the top-k tokens in input positions.  shape: [#seq, #token, k]
     input_top_logprobs_val: List = None
     input_top_logprobs_idx: List = None
-
-
+    
+    # # The hidden states of input tokens.                              shape: [#seq, hidden_size]    
+    # input_token_hidden_states: Optional[torch.Tensor] = None
+    # # The logprobs and ids of the top-k tokens in input positions. shape: [#seq, #token, k]
+    # input_token_top_logprobs_val: Optional[List] = None
+    # input_token_top_logprobs_idx: Optional[List] = None
+    
+    last_hidden_states: Optional[torch.Tensor] = None
+    
+    
 @dataclasses.dataclass
 class LogitsMetadata:
     forward_mode: ForwardMode
@@ -77,6 +92,7 @@ class LogitsMetadata:
     extend_return_top_hidden_states: bool = False
     top_hidden_states_nums: Optional[List[int]] = None
 
+    
     @classmethod
     def from_forward_batch(cls, forward_batch: ForwardBatch):
         if forward_batch.forward_mode.is_extend() and forward_batch.return_logprob:
@@ -148,8 +164,8 @@ class LogitsProcessor(nn.Module):
         if isinstance(logits_metadata, ForwardBatch):
             logits_metadata = LogitsMetadata.from_forward_batch(logits_metadata)
 
-        if logits_metadata.extend_return_hidden_states:
-            raise NotImplementedError("Extend mode with return_hidden_states is not supported yet.")
+        # if logits_metadata.extend_return_hidden_states:
+        #     raise NotImplementedError("Extend mode with return_hidden_states is not supported yet.")
         
         # Get the last hidden states and last logits for the next token prediction
         if (
@@ -193,6 +209,7 @@ class LogitsProcessor(nn.Module):
             not logits_metadata.extend_return_logprob
             or logits_metadata.capture_hidden_mode.need_capture()
         ):
+            print(f"{hidden_states.shape=} , {pruned_states.shape=}")
             # Decode mode or extend mode without return_logprob.
             return LogitsProcessorOutput(
                 next_token_logits=sampled_logits,
@@ -205,8 +222,12 @@ class LogitsProcessor(nn.Module):
                         else None
                     )
                 ),
+                last_hidden_states=hidden_states,
             )
         else:
+            if logits_metadata.extend_return_hidden_states:
+                raise NotImplementedError("Extend mode with return_hidden_states is not supported yet.")
+                            
             input_logprobs = logits
             del hidden_states, logits
 
@@ -304,6 +325,19 @@ class LogitsProcessor(nn.Module):
     ) -> torch.Tensor:
         # TODO: Implement the temp and top-p normalization
         return torch.nn.functional.log_softmax(last_logits, dim=-1)
+
+    @staticmethod
+    def get_top_hidden_states(hidden_states: torch.Tensor, logits_metadata: LogitsMetadata):
+        input_top_hidden_states = []
+        pt = 0
+        for k, pruned_len in zip(logits_metadata.top_hidden_states_nums,
+                                logits_metadata.extend_logprob_pruned_lens_cpu):
+            if pruned_len <= 0:
+                input_top_hidden_states.append([])
+                continue
+            input_top_hidden_states.append(hidden_states[pt:pt+pruned_len-1])
+            pt += pruned_len
+        return input_top_hidden_states
 
 
 @triton.jit
