@@ -568,6 +568,9 @@ class ScheduleBatch:
     # For processing logprobs
     return_logprob: bool = False
     top_logprobs_nums: Optional[List[int]] = None
+    
+    return_hidden_states: bool = False
+    top_hidden_states_nums: Optional[List[int]] = None
 
     # For extend and mixed chunekd prefill
     prefix_lens: List[int] = None
@@ -1173,6 +1176,8 @@ class ScheduleBatch:
             seq_lens_sum=self.seq_lens_sum,
             return_logprob=self.return_logprob,
             top_logprobs_nums=self.top_logprobs_nums,
+            return_hidden_states=self.return_hidden_states,
+            top_hidden_states_nums=self.top_hidden_states_nums,
             global_num_tokens=self.global_num_tokens,
             can_run_dp_cuda_graph=self.can_run_dp_cuda_graph,
             extend_num_tokens=self.extend_num_tokens,
@@ -1204,6 +1209,7 @@ class ScheduleBatch:
             forward_mode=self.forward_mode,
             out_cache_loc=self.out_cache_loc,
             return_logprob=self.return_logprob,
+            return_hidden_states=self.return_hidden_states,
             decoding_reqs=self.decoding_reqs,
             spec_algorithm=self.spec_algorithm,
             enable_custom_logit_processor=self.enable_custom_logit_processor,
@@ -1237,6 +1243,10 @@ class ModelWorkerBatch:
     # For logprob
     return_logprob: bool
     top_logprobs_nums: Optional[List[int]]
+    
+    # For hidden states
+    return_hidden_states: bool
+    top_hidden_states_nums: Optional[List[int]]
 
     # For DP attention
     global_num_tokens: Optional[List[int]]

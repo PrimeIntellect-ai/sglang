@@ -282,6 +282,8 @@ class ForwardBatch:
             seq_lens_sum=batch.seq_lens_sum,
             return_logprob=batch.return_logprob,
             top_logprobs_nums=batch.top_logprobs_nums,
+            return_hidden_states=batch.return_hidden_states,
+            top_hidden_states_nums=batch.top_hidden_states_nums,
             global_num_tokens=batch.global_num_tokens,
             can_run_dp_cuda_graph=batch.can_run_dp_cuda_graph,
             lora_paths=batch.lora_paths,
