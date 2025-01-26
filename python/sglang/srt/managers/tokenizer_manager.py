@@ -383,6 +383,8 @@ class TokenizerManager:
                 input_embeds=input_embeds,
                 session_params=session_params,
                 custom_logit_processor=obj.custom_logit_processor,
+                return_hidden_states=obj.return_hidden_states,
+                top_hidden_states_num=obj.top_hidden_states_num,
             )
         elif isinstance(obj, EmbeddingReqInput):
             tokenized_obj = TokenizedEmbeddingReqInput(

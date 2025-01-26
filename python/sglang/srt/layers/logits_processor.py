@@ -72,6 +72,10 @@ class LogitsMetadata:
     extend_logprob_start_lens_cpu: Optional[List[int]] = None
     extend_logprob_pruned_lens_cpu: Optional[List[int]] = None
     top_logprobs_nums: Optional[List[int]] = None
+    
+    extend_return_hidden_states: bool = False
+    extend_return_top_hidden_states: bool = False
+    top_hidden_states_nums: Optional[List[int]] = None
 
     @classmethod
     def from_forward_batch(cls, forward_batch: ForwardBatch):
@@ -91,6 +95,15 @@ class LogitsMetadata:
             extend_return_logprob = extend_return_top_logprob = (
                 extend_logprob_pruned_lens_cpu
             ) = False
+            
+        if forward_batch.forward_mode.is_extend() and forward_batch.return_hidden_states:
+            extend_return_hidden_states = True
+            extend_return_top_hidden_states = any(
+                x > 0 for x in forward_batch.top_logprobs_nums
+            )
+
+        else:
+            extend_return_hidden_states = extend_return_top_hidden_states = False
 
         return cls(
             forward_mode=forward_batch.forward_mode,
@@ -102,6 +115,9 @@ class LogitsMetadata:
             extend_logprob_start_lens_cpu=forward_batch.extend_logprob_start_lens_cpu,
             extend_logprob_pruned_lens_cpu=extend_logprob_pruned_lens_cpu,
             top_logprobs_nums=forward_batch.top_logprobs_nums,
+            extend_return_hidden_states=extend_return_hidden_states,
+            extend_return_top_hidden_states=extend_return_top_hidden_states,
+            top_hidden_states_nums=forward_batch.top_hidden_states_nums,
         )
 
 
@@ -134,6 +150,9 @@ class LogitsProcessor(nn.Module):
         if isinstance(logits_metadata, ForwardBatch):
             logits_metadata = LogitsMetadata.from_forward_batch(logits_metadata)
 
+        if logits_metadata.extend_return_hidden_states:
+            raise NotImplementedError("Extend mode with return_hidden_states is not supported yet.")
+        
         # Get the last hidden states and last logits for the next token prediction
         if (
             logits_metadata.forward_mode.is_decode_or_idle()
