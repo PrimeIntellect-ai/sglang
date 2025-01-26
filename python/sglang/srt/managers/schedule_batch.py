@@ -234,6 +234,8 @@ class Req:
         session_id: Optional[str] = None,
         custom_logit_processor: Optional[str] = None,
         eos_token_ids: Optional[Set[int]] = None,
+        return_hidden_states: bool = False,
+        top_hidden_states_num: Optional[List[int]] = None,
     ):
         # Input and output info
         self.rid = rid
@@ -322,6 +324,26 @@ class Req:
         self.last_update_decode_tokens = 0
         # The relative logprob_start_len in an extend batch
         self.extend_logprob_start_len = 0
+        
+        # Hidden states (arguments)
+        self.return_hidden_states = return_hidden_states
+        self.top_hidden_states_num = top_hidden_states_num
+
+        # Hidden states (return values)
+        self.input_token_hidden_states_val: Optional[List[float]] = None
+        self.input_token_hidden_states_idx: Optional[List[int]] = None
+        self.input_top_hidden_states_val: Optional[List[float]] = None
+        self.input_top_hidden_states_idx: Optional[List[int]] = None
+
+        if return_hidden_states:
+            self.output_token_hidden_states_val = []
+            self.output_token_hidden_states_idx = []
+            self.output_top_hidden_states_val = []
+            self.output_top_hidden_states_idx = []
+        else:
+            self.output_token_hidden_states_val = self.output_token_hidden_states_idx = (
+                self.output_top_hidden_states_val
+            ) = self.output_top_hidden_states_idx = None
 
         # Embedding (return values)
         self.embedding = None
@@ -621,6 +643,7 @@ class ScheduleBatch:
             model_config=model_config,
             enable_overlap=enable_overlap,
             return_logprob=any(req.return_logprob for req in reqs),
+            return_hidden_states=any(req.return_hidden_states for req in reqs),
             has_stream=any(req.stream for req in reqs),
             has_grammar=any(req.grammar for req in reqs),
             device=req_to_token_pool.device,
@@ -808,6 +831,8 @@ class ScheduleBatch:
         self.seq_lens_sum = sum(seq_lens)
         if self.return_logprob:
             self.top_logprobs_nums = [r.top_logprobs_num for r in reqs]
+        if self.return_hidden_states:
+            self.top_hidden_states_nums = [r.top_hidden_states_num for r in reqs]
         self.extend_num_tokens = extend_num_tokens
         self.prefix_lens = [len(r.prefix_indices) for r in reqs]
         self.extend_lens = [r.extend_input_len for r in reqs]

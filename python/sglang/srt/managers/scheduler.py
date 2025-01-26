@@ -611,6 +611,8 @@ class Scheduler:
                 recv_req.sampling_params,
                 return_logprob=recv_req.return_logprob,
                 top_logprobs_num=recv_req.top_logprobs_num,
+                return_hidden_states=recv_req.return_hidden_states,
+                top_hidden_states_num=recv_req.top_hidden_states_num,
                 stream=recv_req.stream,
                 lora_path=recv_req.lora_path,
                 input_embeds=recv_req.input_embeds,

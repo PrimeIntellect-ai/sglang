@@ -98,9 +98,7 @@ class LogitsMetadata:
             
         if forward_batch.forward_mode.is_extend() and forward_batch.return_hidden_states:
             extend_return_hidden_states = True
-            extend_return_top_hidden_states = any(
-                x > 0 for x in forward_batch.top_logprobs_nums
-            )
+            extend_return_top_hidden_states = any(x > 0 for x in forward_batch.top_hidden_states_nums)
 
         else:
             extend_return_hidden_states = extend_return_top_hidden_states = False
