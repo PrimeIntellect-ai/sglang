@@ -91,7 +91,7 @@ class LogitsMetadata:
     
     extend_return_hidden_states: bool = False
     extend_return_top_hidden_states: bool = False
-    top_hidden_states_nums: Optional[List[int]] = None
+    top_hidden_states_nums: Optional[int] = None
 
     
     @classmethod
@@ -115,7 +115,7 @@ class LogitsMetadata:
             
         if forward_batch.forward_mode.is_extend() and forward_batch.return_hidden_states:
             extend_return_hidden_states = True
-            extend_return_top_hidden_states = any(x > 0 for x in forward_batch.top_hidden_states_nums)
+            extend_return_top_hidden_states = forward_batch.top_hidden_states_nums is not None and forward_batch.top_hidden_states_nums > 0
 
         else:
             extend_return_hidden_states = extend_return_top_hidden_states = False
@@ -160,11 +160,11 @@ class LogitsProcessor(nn.Module):
         if self.do_tensor_parallel_all_gather:
             pruned_states = tensor_model_parallel_all_gather(pruned_states)
 
-        # if logits_metadata.top_hidden_states_nums[0] is None:
-        #     raise NotImplementedError("Extend mode with return_hidden_states is not supported yet.")
+        if logits_metadata.top_hidden_states_nums is None:
+            raise NotImplementedError("Extend mode with return_hidden_states is not supported yet.")
 
-        # topk = logits_metadata.top_hidden_states_nums[0]
-        topk = 8
+        topk = logits_metadata.top_hidden_states_nums
+
 
         topk_states =  pruned_states.topk(topk, dim=1)
         
@@ -230,7 +230,7 @@ class LogitsProcessor(nn.Module):
             
             topk_logits_val, topk_logits_idx = self._get_topk_logits(pruned_states, logits_metadata)
             
-            print(f"{hidden_states.shape=} , {pruned_states.shape=}, {input_ids.shape=}, {topk_logits_val.shape=}, {topk_logits_idx.shape=}")
+            # print(f"{hidden_states.shape=} , {pruned_states.shape=}, {input_ids.shape=}, {topk_logits_val.shape=}, {topk_logits_idx.shape=}")
 
             return LogitsProcessorOutput(
                 next_token_logits=sampled_logits,
@@ -347,20 +347,6 @@ class LogitsProcessor(nn.Module):
     ) -> torch.Tensor:
         # TODO: Implement the temp and top-p normalization
         return torch.nn.functional.log_softmax(last_logits, dim=-1)
-
-    @staticmethod
-    def get_top_hidden_states(hidden_states: torch.Tensor, logits_metadata: LogitsMetadata):
-        input_top_hidden_states = []
-        pt = 0
-        for k, pruned_len in zip(logits_metadata.top_hidden_states_nums,
-                                logits_metadata.extend_logprob_pruned_lens_cpu):
-            if pruned_len <= 0:
-                input_top_hidden_states.append([])
-                continue
-            input_top_hidden_states.append(hidden_states[pt:pt+pruned_len-1])
-            pt += pruned_len
-        return input_top_hidden_states
-
 
 @triton.jit
 def fused_softcap_kernel(

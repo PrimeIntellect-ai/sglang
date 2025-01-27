@@ -348,6 +348,7 @@ class CudaGraphRunner:
             capture_hidden_mode=(
                 spec_info.capture_hidden_mode if spec_info else CaptureHiddenMode.NULL
             ),
+            top_hidden_states_nums=self.model_runner.server_args.top_hidden_states_nums,
         )
 
         # Attention backend

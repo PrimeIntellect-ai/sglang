@@ -151,7 +151,7 @@ class ForwardBatch:
     
     # for hidden states
     return_hidden_states: bool = False
-    top_hidden_states_nums: Optional[List[int]] = None
+    top_hidden_states_nums: Optional[int] = None
 
     # Position information
     positions: torch.Tensor = None

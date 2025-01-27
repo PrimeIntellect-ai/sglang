@@ -592,7 +592,7 @@ class ScheduleBatch:
     top_logprobs_nums: Optional[List[int]] = None
     
     return_hidden_states: bool = False
-    top_hidden_states_nums: Optional[List[int]] = None
+    top_hidden_states_nums: Optional[int] = None
 
     # For extend and mixed chunekd prefill
     prefix_lens: List[int] = None
@@ -832,7 +832,7 @@ class ScheduleBatch:
         if self.return_logprob:
             self.top_logprobs_nums = [r.top_logprobs_num for r in reqs]
         if self.return_hidden_states:
-            self.top_hidden_states_nums = [r.top_hidden_states_num for r in reqs]
+            self.top_hidden_states_nums = reqs[0].top_hidden_states_num
         self.extend_num_tokens = extend_num_tokens
         self.prefix_lens = [len(r.prefix_indices) for r in reqs]
         self.extend_lens = [r.extend_input_len for r in reqs]
@@ -1271,7 +1271,7 @@ class ModelWorkerBatch:
     
     # For hidden states
     return_hidden_states: bool
-    top_hidden_states_nums: Optional[List[int]]
+    top_hidden_states_nums: Optional[int]
 
     # For DP attention
     global_num_tokens: Optional[List[int]]
