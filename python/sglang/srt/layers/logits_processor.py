@@ -166,7 +166,7 @@ class LogitsProcessor(nn.Module):
         topk = logits_metadata.top_hidden_states_nums
 
 
-        topk_states =  pruned_states.topk(topk, dim=1)
+        topk_states =  pruned_states.abs().topk(topk, dim=1)
         
         return topk_states.values, topk_states.indices
         
