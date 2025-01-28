@@ -165,11 +165,20 @@ class LogitsProcessor(nn.Module):
 
         topk = logits_metadata.top_hidden_states_nums
 
+<<<<<<< Updated upstream
 
         topk_states =  pruned_states.abs().topk(topk, dim=1)
         
         return topk_states.values, topk_states.indices
         
+=======
+        if topk == -1:
+            return pruned_states, torch.arange(pruned_states.size(1), device=pruned_states.device)
+        else:
+            topk_states =  pruned_states.topk(topk, dim=1)
+            return topk_states.values, topk_states.indices
+            
+>>>>>>> Stashed changes
     
     def forward(
         self,
